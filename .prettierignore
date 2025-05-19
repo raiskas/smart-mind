@@ -1,0 +1,8 @@
+.next
+node_modules
+.pnp.cjs
+.pnp.loader.mjs
+public
+package-lock.json
+pnpm-lock.yaml
+# Adicione outros arquivos/pastas que você não quer formatar 

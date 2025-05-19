@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/lib/utils": ["./lib/utils.ts"],
+      "@/lib/supabase/server": ["./lib/supabase/server.ts"],
+      "@/lib/authUtils": ["./lib/authUtils.ts"],
+      "@/lib/supabase/service": ["./lib/supabase/service.ts"],
+      "@/lib/supabase/client": ["./lib/supabase/client.ts"],
+      "@/lib/types/screens": ["./lib/types/screens.ts"],
+      "@/lib/schemas/roleSchemas": ["./lib/schemas/roleSchemas.ts"],
+      "@/lib/*": ["./app/lib/*"]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+} 
