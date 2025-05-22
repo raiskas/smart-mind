@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useFormState } from 'react-dom';
 import { useTranslations } from 'next-intl';
+import { Input } from '@/components/ui/input'; // Added Input import
 
 import { CompanyData, CurrencyData, CompanyWithDetails, Company as CompanyType } from './types'; // Types from the parent page
-import { createCompanyAction, updateCompanyAction, CreateCompanyFormState } from '../../../../actions/companyActions';
+import { createCompanyAction, updateCompanyAction } from '../../../../actions/companyActions';
+import type { CreateCompanyFormState } from '../../../../lib/schemas/companyTypes'; // Corrected import path
 // Placeholder for actual UI components. Assuming Shadcn/UI components will be used later.
 import { Button } from '../../../../../components/ui/button'; 
 // import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -27,11 +29,13 @@ export default function CompanyManagementPageClient({
 }: CompanyManagementPageClientProps) {
   const t = useTranslations('Admin.CompanyManagement');
   const tShared = useTranslations('Shared'); // For common terms like Save, Cancel, Edit, Delete
+  const tGlobal = useTranslations('global'); // Added tGlobal
   const router = useRouter();
 
   const [companies, setCompanies] = useState<CompanyData[]>(initialCompanies);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyData | null>(null);
+  const [searchTerm, setSearchTerm] = useState(''); // Added searchTerm state
 
   // Effect to update local companies state if initialCompanies prop changes (e.g., after revalidation)
   useEffect(() => {
@@ -108,7 +112,13 @@ export default function CompanyManagementPageClient({
                            initialFormStateForParent;
 
   // Preparar dados para CompanyTable, juntando nome da moeda
-  const companiesForTable: CompanyWithDetails[] = companies.map(comp => {
+  const companiesForTable: CompanyWithDetails[] = companies
+    .filter(comp => 
+      comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (comp.official_name && comp.official_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (comp.tax_id && comp.tax_id.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .map(comp => {
     const currency = currencies.find(curr => curr.id === comp.default_currency_id);
     return {
       ...comp,
@@ -124,12 +134,17 @@ export default function CompanyManagementPageClient({
   });
 
   return (
-    <div>
-      <div className="mb-4 flex justify-end">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
         <Button onClick={handleOpenCreateModal}>{t('buttons.addCompany')}</Button>
       </div>
 
-      {/* Substituir a lista placeholder pela CompanyTable */}
       <CompanyTable 
         companies={companiesForTable} 
         onEdit={handleOpenEditModal} 
@@ -143,8 +158,8 @@ export default function CompanyManagementPageClient({
               {editingCompany ? t('modal.editTitle') : t('modal.createTitle')}
             </h3>
             <CompanyForm
-              formAction={currentAction} // Pass the raw server action
-              initialFormState={formInitialState} // Pass the initial state for the form
+              formAction={currentAction} 
+              initialFormState={formInitialState} 
               initialData={editingCompany}
               currencies={currencies}
               onFormSubmitSuccess={handleFormSuccess} 

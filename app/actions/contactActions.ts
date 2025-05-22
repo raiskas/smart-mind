@@ -2,360 +2,257 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { getServiceRoleClient } from '@/lib/supabase/service';
-import { createClient } from '@/lib/supabase/server'; // Usado para getContactsForCompany, getContactById
+import { createClient } from '@/lib/supabase/server';
 import {
   CreateContactSchema,
+  CreateContactFormData,
   UpdateContactSchema,
-  type Contact,
+  UpdateContactFormData,
+  Contact,
+  ContactListItem,
+  ContactForSelect,
+  ContactSchema
 } from '@/lib/schemas/contact';
-import { getCurrentUserContext } from '@/lib/auth/actions'; // Importar de @/lib/auth/actions
-import type { ActionResponse } from '@/lib/types/actions'; // Importar de @/lib/types/actions
-import { DEFAULT_PAGE_SIZE } from '@/lib/constants/pagination';
-import type { ContactTypeValue } from '@/lib/constants/financial';
+import { getCurrentUserContext } from '@/lib/authUtils';
 
-// ActionResponse e UserContext não são mais definidos localmente
+// Helper para tratamento de erros
+interface ActionResult<T = null> {
+  isSuccess: boolean;
+  message?: string;
+  data?: T;
+  errors?: z.ZodIssue[];
+}
 
-export async function createContactAction(rawData: unknown): Promise<ActionResponse<Contact>> {
-  const supabase = getServiceRoleClient();
-  const { userId, companyId } = await getCurrentUserContext();
-
-  if (!companyId || !userId) {
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Usuário não associado a uma empresa, não autenticado ou ID de usuário não encontrado.',
-    };
-  }
-
-  const validatedFields = CreateContactSchema.safeParse(rawData);
-
-  if (!validatedFields.success) {
-    console.error('Validation Error (CreateContact):', validatedFields.error.flatten().fieldErrors);
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Dados do formulário inválidos. Por favor, corrija os erros.',
-      errors: validatedFields.error.errors,
-    };
-  }
-
-  const contactData = {
-    ...validatedFields.data,
-    company_id: companyId,
-    // created_by_user_id: userId, // Adicionar se a tabela contacts tiver esta coluna
-  };
-
+// --- CREATE CONTACT ---
+export async function createContactAction(
+  formData: CreateContactFormData
+): Promise<ActionResult<Contact>> {
   try {
-    const { data: newContact, error: insertError } = await supabase
+    const { userId, companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !userId || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+
+    const validation = CreateContactSchema.safeParse(formData);
+    if (!validation.success) {
+      return { isSuccess: false, message: 'invalid_form_data', errors: validation.error.errors };
+    }
+
+    const supabase = createClient();
+    const contactDataToInsert = { ...validation.data, company_id: companyId };
+
+    const { data: newContact, error } = await supabase
       .from('contacts')
-      .insert(contactData)
+      .insert(contactDataToInsert)
       .select()
       .single();
 
-    if (insertError) {
-      console.error('Error inserting contact:', insertError);
-      return { isSuccess: false, isError: true, message: `Falha ao criar contato: ${insertError.message}` };
+    if (error) {
+      console.error('Error creating contact:', error);
+      return { isSuccess: false, message: error.message || 'error_creating_contact' };
     }
 
-    revalidatePath('/admin/financials/contacts'); // Ajustar o path conforme necessário
-
-    return {
-      isSuccess: true,
-      isError: false,
-      message: 'Contato criado com sucesso.',
-      data: newContact,
-    };
+    revalidatePath('/admin/management/contacts');
+    return { isSuccess: true, data: newContact as Contact, message: 'contact_created_successfully' };
 
   } catch (e: any) {
     console.error('Unexpected error in createContactAction:', e);
-    return { isSuccess: false, isError: true, message: `Ocorreu um erro inesperado: ${e.message}` };
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
   }
 }
 
-// Placeholder for other actions
-// export async function updateContactAction(...) { ... }
-// export async function deleteContactAction(...) { ... }
-
-export interface GetContactsParams {
-  name?: string;
-  email?: string;
-  phone?: string;
-  type?: ContactTypeValue;
+// --- GET CONTACTS FOR COMPANY (Paginated) ---
+interface GetContactsParams {
   page?: number;
   pageSize?: number;
+  searchTerm?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
-export async function getContactsForCompany(
-  params?: GetContactsParams
-): Promise<ActionResponse<Contact[]>> {
-  const supabase = createClient();
-  const { companyId } = await getCurrentUserContext();
-
-  if (!companyId) {
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Usuário não associado a uma empresa.',
-      data: [],
-    };
-  }
-
-  const page = params?.page || 1;
-  const pageSize = params?.pageSize || DEFAULT_PAGE_SIZE;
-  const offset = (page - 1) * pageSize;
-
+export async function getContactsForCompanyAction(
+  params: GetContactsParams = {}
+): Promise<ActionResult<{ contacts: ContactListItem[]; totalCount: number }>> {
   try {
+    const { companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+
+    const supabase = createClient();
+    const { page = 1, pageSize = 10, searchTerm, sortBy = 'name', sortOrder = 'asc' } = params;
+    const offset = (page - 1) * pageSize;
+
     let query = supabase
       .from('contacts')
-      .select('*', { count: 'exact' })
+      .select('id, name, alias_name, type, email, phone_number, is_active', { count: 'exact' })
       .eq('company_id', companyId);
 
-    // Aplicar filtros opcionais
-    if (params?.name) {
-      query = query.ilike('name', `%${params.name}%`);
+    if (searchTerm) {
+      query = query.or(`name.ilike.%${searchTerm}%,alias_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
     }
-    if (params?.email) {
-      query = query.ilike('email', `%${params.email}%`);
-    }
-    if (params?.phone) {
-      query = query.ilike('phone', `%${params.phone}%`);
-    }
-    if (params?.type) {
-      query = query.eq('type', params.type);
-    }
-    
-    query = query.order('name', { ascending: true }).range(offset, offset + pageSize - 1);
+
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' }).range(offset, offset + pageSize - 1);
 
     const { data, error, count } = await query;
 
     if (error) {
       console.error('Error fetching contacts:', error);
-      return { isSuccess: false, isError: true, message: `Erro ao buscar contatos: ${error.message}`, data: [] };
+      return { isSuccess: false, message: error.message || 'error_fetching_contacts' };
     }
-
-    const totalCount = count || 0;
-    const totalPages = Math.ceil(totalCount / pageSize);
-
-    return {
-      isSuccess: true, 
-      isError: false, 
-      data: data || [],
-      pagination: {
-        currentPage: page,
-        pageSize,
-        totalCount,
-        totalPages,
-      }
-    };
-
-  } catch (e: any) {
-    console.error('Unexpected error in getContactsForCompany:', e);
-    return { isSuccess: false, isError: true, message: `Erro inesperado: ${e.message}`, data: [] };
-  }
-}
-
-export async function getContactById(id: string): Promise<ActionResponse<Contact | null>> {
-  if (!id || typeof id !== 'string' || !id.trim()) {
-    return { isSuccess: false, isError: true, message: 'ID do contato é obrigatório.', data: null };
-  }
-  
-  const supabase = createClient();
-  const { userId, companyId } = await getCurrentUserContext(); // Updated call
-
-  if (!companyId) {
-    return { isSuccess: false, isError: true, message: 'Usuário não associado a uma empresa.', data: null };
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('contacts')
-      .select('*')
-      .eq('id', id)
-      .eq('company_id', companyId) // Ensure the contact belongs to the user's company
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') { // "Searched for a single row, but 0 rows were found"
-        return { isSuccess: false, isError: true, message: 'Contato não encontrado.', data: null };
-      }
-      console.error(`Error fetching contact by ID (${id}):`, error);
-      return { isSuccess: false, isError: true, message: `Erro ao buscar contato: ${error.message}`, data: null };
-    }
-    return { isSuccess: true, isError: false, data: data };
-
-  } catch (e: any) {
-    console.error('Unexpected error in getContactById:', e);
-    return { isSuccess: false, isError: true, message: `Erro inesperado: ${e.message}`, data: null };
-  }
-}
-
-export async function updateContactAction(
-  id: string,
-  rawData: unknown
-): Promise<ActionResponse<Contact>> {
-  if (!id || typeof id !== 'string' || !id.trim()) {
-    return { isSuccess: false, isError: true, message: 'ID do contato é obrigatório para atualização.' };
-  }
-
-  const supabase = getServiceRoleClient();
-  const { userId, companyId } = await getCurrentUserContext(); // Updated call
-
-  if (!companyId) {
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Usuário não associado a uma empresa ou não autenticado.',
-    };
-  }
-
-  const validatedFields = UpdateContactSchema.safeParse(rawData);
-
-  if (!validatedFields.success) {
-    console.error('Validation Error (UpdateContact):', validatedFields.error.flatten().fieldErrors);
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Dados do formulário inválidos para atualização. Por favor, corrija os erros.',
-      errors: validatedFields.error.errors,
-    };
-  }
-
-  const updateData = validatedFields.data;
-
-  try {
-    // First, verify the contact exists and belongs to the company
-    const { data: existingContactCheck, error: checkError } = await supabase
-      .from('contacts')
-      .select('id, name, type')
-      .eq('id', id)
-      .eq('company_id', companyId)
-      .single();
-
-    if (checkError) {
-      if (checkError.code === 'PGRST116') {
-        return { isSuccess: false, isError: true, message: 'Contato não encontrado para atualização.' };
-      }
-      console.error('Error checking contact for update:', checkError);
-      return { isSuccess: false, isError: true, message: `Erro no banco de dados: ${checkError.message}` };
-    }
-
-    // If name or type are being changed, check for potential unique constraint violation
-    if ((updateData.name && updateData.name !== existingContactCheck.name) || 
-        (updateData.type && updateData.type !== existingContactCheck.type)) {
-      const newName = updateData.name || existingContactCheck.name;
-      const newType = updateData.type || existingContactCheck.type;
-      
-      const { data: duplicateCheck, error: duplicateError } = await supabase
-        .from('contacts')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('name', newName)
-        .eq('type', newType)
-        .neq('id', id) // Exclude the current contact itself from the check
-        .maybeSingle();
-
-      if (duplicateError && duplicateError.code !== 'PGRST116') {
-        console.error('Error checking for duplicate contact name/type on update:', duplicateError);
-        return { isSuccess: false, isError: true, message: `Erro no banco de dados: ${duplicateError.message}` };
-      }
-
-      if (duplicateCheck) {
-        return {
-          isSuccess: false,
-          isError: true,
-          message: 'Já existe outro contato com este nome e tipo para sua empresa.',
-        };
-      }
-    }
-
-    const { data: updatedContact, error: updateError } = await supabase
-      .from('contacts')
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString(), // Explicitly set updated_at
-      })
-      .eq('id', id)
-      .eq('company_id', companyId) // Ensure RLS or direct check confines update to company
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating contact:', updateError);
-      // Check for unique constraint violation error (though we try to pre-check)
-      if (updateError.code === '23505') { // PostgreSQL unique_violation error code
-         return { isSuccess: false, isError: true, message: 'Já existe um contato com este nome e tipo.' };
-      }
-      return { isSuccess: false, isError: true, message: `Falha ao atualizar contato: ${updateError.message}` };
-    }
-
-    revalidatePath('/admin/financials/contacts'); // Adjust as needed
-    revalidatePath(`/admin/financials/contacts/${id}`); // If there's a specific page for viewing/editing a contact
 
     return {
       isSuccess: true,
-      isError: false,
-      message: 'Contato atualizado com sucesso.',
-      data: updatedContact,
+      data: { contacts: data as ContactListItem[], totalCount: count || 0 },
     };
 
   } catch (e: any) {
-    console.error('Unexpected error in updateContactAction:', e);
-    return { isSuccess: false, isError: true, message: `Ocorreu um erro inesperado: ${e.message}` };
+    console.error('Unexpected error in getContactsForCompanyAction:', e);
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
   }
 }
 
-export async function deleteContactAction(id: string): Promise<ActionResponse> {
-  if (!id || typeof id !== 'string' || !id.trim()) {
-    return { isSuccess: false, isError: true, message: 'ID do contato é obrigatório para exclusão.' };
-  }
-
-  const supabase = getServiceRoleClient();
-  const { userId, companyId } = await getCurrentUserContext(); // Updated call
-
-  if (!companyId) {
-    return {
-      isSuccess: false,
-      isError: true,
-      message: 'Usuário não associado a uma empresa ou não autenticado.',
-    };
-  }
-
+// --- GET CONTACT BY ID ---
+export async function getContactByIdAction(id: string): Promise<ActionResult<Contact>> {
   try {
-    // Optional: Verify the contact exists and belongs to the company before deleting
-    // This adds an extra DB call but ensures we don't try to delete non-existent/unauthorized data.
-    const { data: contactToDelete, error: checkError } = await supabase
+    const { companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+    if (!id) return { isSuccess: false, message: 'contact_id_required' };
+
+    const supabase = createClient();
+    const { data: contact, error } = await supabase
       .from('contacts')
-      .select('id')
+      .select('*')
       .eq('id', id)
       .eq('company_id', companyId)
       .single();
 
-    if (checkError || !contactToDelete) {
-      if (checkError && checkError.code === 'PGRST116') {
-        return { isSuccess: false, isError: true, message: 'Contato não encontrado para exclusão.' };  
+    if (error) {
+      console.error('Error fetching contact by ID:', error);
+      if (error.code === 'PGRST116') {
+        return { isSuccess: false, message: 'contact_not_found' };
       }
-      console.error('Error checking contact for deletion or contact not found:', checkError);
-      return { isSuccess: false, isError: true, message: 'Contato não encontrado ou não pertence à sua empresa.' };
+      return { isSuccess: false, message: error.message || 'error_fetching_contact' };
     }
+    return { isSuccess: true, data: contact as Contact };
+
+  } catch (e: any) {
+    console.error('Unexpected error in getContactByIdAction:', e);
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
+  }
+}
+
+// --- UPDATE CONTACT ---
+export async function updateContactAction(
+  id: string,
+  formData: UpdateContactFormData
+): Promise<ActionResult<Contact>> {
+  try {
+    const { companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+
+    const validation = UpdateContactSchema.safeParse(formData);
+    if (!validation.success) {
+      return { isSuccess: false, message: 'invalid_form_data', errors: validation.error.errors };
+    }
+    if (validation.data.id !== id) {
+        return { isSuccess: false, message: 'contact_id_mismatch' };
+    }
+
+    const supabase = createClient();
     
-    const { error: deleteError } = await supabase
+    const { id: validatedId, ...updatePayload } = validation.data;
+
+    const { data: updatedContact, error } = await supabase
+      .from('contacts')
+      .update(updatePayload)
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating contact:', error);
+      return { isSuccess: false, message: error.message || 'error_updating_contact' };
+    }
+
+    revalidatePath('/admin/management/contacts');
+    revalidatePath(`/admin/management/contacts/${id}`);
+    return { isSuccess: true, data: updatedContact as Contact, message: 'contact_updated_successfully' };
+
+  } catch (e: any) {
+    console.error('Unexpected error in updateContactAction:', e);
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
+  }
+}
+
+// --- DELETE CONTACT ---
+export async function deleteContactAction(id: string): Promise<ActionResult> {
+  try {
+    const { companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+    if (!id) return { isSuccess: false, message: 'contact_id_required' };
+
+    const supabase = createClient();
+    const { error } = await supabase
       .from('contacts')
       .delete()
       .eq('id', id)
-      .eq('company_id', companyId); // Redundant if RLS is perfect, but good for service role client safety
+      .eq('company_id', companyId);
 
-    if (deleteError) {
-      console.error('Error deleting contact:', deleteError);
-      return { isSuccess: false, isError: true, message: `Falha ao excluir contato: ${deleteError.message}` };
+    if (error) {
+      console.error('Error deleting contact:', error);
+      return { isSuccess: false, message: error.message || 'error_deleting_contact' };
     }
 
-    revalidatePath('/admin/financials/contacts'); // Adjust as needed
-
-    return { isSuccess: true, isError: false, message: 'Contato excluído com sucesso.' };
+    revalidatePath('/admin/management/contacts');
+    return { isSuccess: true, message: 'contact_deleted_successfully' };
 
   } catch (e: any) {
     console.error('Unexpected error in deleteContactAction:', e);
-    return { isSuccess: false, isError: true, message: `Ocorreu um erro inesperado: ${e.message}` };
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
+  }
+}
+
+// --- GET CONTACTS FOR SELECT ---
+export async function getContactsForSelectAction(): Promise<ActionResult<ContactForSelect[]>> {
+  try {
+    const { companyId, error: userContextError } = await getCurrentUserContext();
+    if (userContextError || !companyId) {
+      return { isSuccess: false, message: userContextError?.message || 'user_not_authenticated_or_no_company' };
+    }
+
+    const supabase = createClient();
+    const { data: contacts, error } = await supabase
+      .from('contacts')
+      .select('id, name, alias_name')
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching contacts for select:', error);
+      return { isSuccess: false, message: error.message || 'error_fetching_contacts_for_select' };
+    }
+    if (!contacts) {
+        return { isSuccess: true, data: [] };
+    }
+
+    const formattedContacts = contacts.map(c => ({
+      value: c.id,
+      label: c.alias_name ? `${c.name} (${c.alias_name})` : c.name,
+    }));
+
+    return { isSuccess: true, data: formattedContacts };
+
+  } catch (e: any) {
+    console.error('Unexpected error in getContactsForSelectAction:', e);
+    return { isSuccess: false, message: e.message || 'unexpected_error' };
   }
 } 

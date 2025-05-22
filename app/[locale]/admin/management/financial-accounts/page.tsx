@@ -5,27 +5,32 @@ import FinancialAccountManagementPageClient from "./FinancialAccountManagementPa
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons"; 
 import { getCurrentUserContext } from "@/lib/auth/actions"; 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function FinancialAccountsPage() {
-  const t = await getTranslations("admin.management.financialAccounts");
+  const tPage = await getTranslations("admin.financials.management.financialAccounts");
   const tGlobal = await getTranslations("global");
 
   const { companyId, userId } = await getCurrentUserContext();
 
   if (!companyId) {
-    // TODO: Re-enable Alert component when available
     return (
       <Alert variant="destructive">
         <ExclamationTriangleIcon className="h-4 w-4" />
         <AlertTitle>{tGlobal("errors.errorTitle")}</AlertTitle>
         <AlertDescription>
-          {t("errorUserNotAssociatedWithCompany")}
+          {tPage("errorUserNotAssociatedWithCompany")}
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Fetching data in parallel
   const [accountsResult, currenciesResult] = await Promise.all([
     getFinancialAccountsForCompany(),
     getCurrenciesAction(),
@@ -33,7 +38,6 @@ export default async function FinancialAccountsPage() {
 
   if (!accountsResult.isSuccess || currenciesResult.error) {
     const errorMessage = accountsResult.message || currenciesResult.error || tGlobal("errors.generic");
-    // TODO: Re-enable Alert component when available
     return (
       <Alert variant="destructive">
         <ExclamationTriangleIcon className="h-4 w-4" />
@@ -43,15 +47,24 @@ export default async function FinancialAccountsPage() {
     );
   }
 
-  // Assegurar que os dados não são nulos/undefined antes de passar para o cliente
   const financialAccounts = accountsResult.data || [];
   const currencies = currenciesResult.currencies || [];
 
   return (
-    <FinancialAccountManagementPageClient
-      initialFinancialAccounts={financialAccounts}
-      availableCurrencies={currencies}
-      companyId={companyId}
-    />
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{tPage('title')}</CardTitle>
+          <CardDescription>{tPage('description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FinancialAccountManagementPageClient
+            initialFinancialAccounts={financialAccounts}
+            availableCurrencies={currencies}
+            companyId={companyId}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

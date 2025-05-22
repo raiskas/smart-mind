@@ -86,7 +86,7 @@ export interface TransactionFilters {
   dateFrom?: string; // ISO date string e.g., YYYY-MM-DD
   dateTo?: string;   // ISO date string e.g., YYYY-MM-DD
   type?: TransactionTypeValue;
-  status?: TransactionStatusValue;
+  status?: TransactionStatusValue | TransactionStatusValue[];
   financialAccountId?: string; 
   categoryId?: string;
   contactId?: string;
@@ -107,9 +107,21 @@ export type TransactionWithRelatedData = Transaction & {
   currency_code?: string | null; // From the transaction's currency_id
 };
 
+// Tipo de retorno da action atualizado
+export interface GetTransactionsResponse {
+  data: TransactionWithRelatedData[];
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  totalAmountFiltered?: number; // Novo campo para o somatório
+}
+
 export async function getTransactionsForCompany(
   filters?: TransactionFilters
-): Promise<ActionResponse<TransactionWithRelatedData[]>> {
+): Promise<ActionResponse<GetTransactionsResponse>> { // Tipo de retorno atualizado
   const supabase = createClient();
   const { companyId } = await getCurrentUserContext();
 
@@ -118,7 +130,16 @@ export async function getTransactionsForCompany(
       isSuccess: false,
       isError: true,
       message: 'Usuário não associado a uma empresa.',
-      data: [],
+      data: { // Estrutura de erro compatível
+        data: [],
+        pagination: {
+          currentPage: 1,
+          pageSize: filters?.pageSize || DEFAULT_PAGE_SIZE,
+          totalCount: 0,
+          totalPages: 0,
+        },
+        totalAmountFiltered: 0
+      }
     };
   }
 
@@ -127,7 +148,50 @@ export async function getTransactionsForCompany(
   const offset = (page - 1) * pageSize;
 
   try {
-    let query = supabase
+    // Query base para filtros (usada para dados e para soma)
+    let baseQuery = supabase
+      .from('transactions')
+      .select(`*`, { head: false }) // Não precisamos de count para a query de soma inicialmente
+      .eq('company_id', companyId);
+
+    // Aplicar filtros à query base
+    if (filters?.dateFrom) {
+      baseQuery = baseQuery.gte('transaction_date', filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      baseQuery = baseQuery.lte('transaction_date', filters.dateTo);
+    }
+    if (filters?.type) {
+      baseQuery = baseQuery.eq('type', filters.type);
+    }
+    if (filters?.status) {
+      if (Array.isArray(filters.status)) {
+        baseQuery = baseQuery.in('status', filters.status);
+      } else {
+        baseQuery = baseQuery.eq('status', filters.status);
+      }
+    }
+    if (filters?.financialAccountId) {
+      baseQuery = baseQuery.eq('financial_account_id', filters.financialAccountId);
+    }
+    if (filters?.categoryId) {
+      baseQuery = baseQuery.eq('category_id', filters.categoryId);
+    }
+    if (filters?.contactId) {
+      baseQuery = baseQuery.eq('contact_id', filters.contactId);
+    }
+    if (filters?.description) {
+      baseQuery = baseQuery.ilike('description', `%${filters.description}%`);
+    }
+    if (filters?.minAmount !== undefined) {
+      baseQuery = baseQuery.gte('amount', filters.minAmount);
+    }
+    if (filters?.maxAmount !== undefined) {
+      baseQuery = baseQuery.lte('amount', filters.maxAmount);
+    }
+
+    // Query para buscar os dados paginados (com joins e count)
+    let dataQuery = supabase
       .from('transactions')
       .select(`
         *,
@@ -137,52 +201,65 @@ export async function getTransactionsForCompany(
       `, { count: 'exact' })
       .eq('company_id', companyId);
 
-    // Apply filters
-    if (filters?.dateFrom) {
-      query = query.gte('transaction_date', filters.dateFrom);
-    }
-    if (filters?.dateTo) {
-      query = query.lte('transaction_date', filters.dateTo);
-    }
-    if (filters?.type) {
-      query = query.eq('type', filters.type);
-    }
+    // Reaplicar filtros à dataQuery (ou clonar baseQuery antes de adicionar joins e select específico)
+    // Para simplicidade, reaplicamos os filtros.
+    if (filters?.dateFrom) { dataQuery = dataQuery.gte('transaction_date', filters.dateFrom); }
+    if (filters?.dateTo) { dataQuery = dataQuery.lte('transaction_date', filters.dateTo); }
+    if (filters?.type) { dataQuery = dataQuery.eq('type', filters.type); }
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      if (Array.isArray(filters.status)) { dataQuery = dataQuery.in('status', filters.status); }
+      else { dataQuery = dataQuery.eq('status', filters.status); }
     }
-    if (filters?.financialAccountId) {
-      query = query.eq('financial_account_id', filters.financialAccountId);
-    }
-    if (filters?.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    if (filters?.contactId) {
-      query = query.eq('contact_id', filters.contactId);
-    }
-    if (filters?.description) {
-      query = query.ilike('description', `%${filters.description}%`);
-    }
-    if (filters?.minAmount !== undefined) {
-      query = query.gte('amount', filters.minAmount);
-    }
-    if (filters?.maxAmount !== undefined) {
-      query = query.lte('amount', filters.maxAmount);
-    }
-
-    // Sorting
+    if (filters?.financialAccountId) { dataQuery = dataQuery.eq('financial_account_id', filters.financialAccountId); }
+    if (filters?.categoryId) { dataQuery = dataQuery.eq('category_id', filters.categoryId); }
+    if (filters?.contactId) { dataQuery = dataQuery.eq('contact_id', filters.contactId); }
+    if (filters?.description) { dataQuery = dataQuery.ilike('description', `%${filters.description}%`); }
+    if (filters?.minAmount !== undefined) { dataQuery = dataQuery.gte('amount', filters.minAmount); }
+    if (filters?.maxAmount !== undefined) { dataQuery = dataQuery.lte('amount', filters.maxAmount); }
+    
+    // Sorting para dataQuery
     const sortBy = filters?.sortBy || 'transaction_date';
     const sortDirection = filters?.sortDirection || 'desc';
-    query = query.order(sortBy, { ascending: sortDirection === 'asc' });
-    query = query.order('created_at', { ascending: false });
+    dataQuery = dataQuery.order(sortBy, { ascending: sortDirection === 'asc' });
+    dataQuery = dataQuery.order('created_at', { ascending: false });
 
-    // Apply pagination
-    query = query.range(offset, offset + pageSize - 1);
+    // Paginação para dataQuery
+    dataQuery = dataQuery.range(offset, offset + pageSize - 1);
 
-    const { data, error, count } = await query;
+    const { data, error: dataError, count } = await dataQuery;
 
-    if (error) {
-      console.error('Error fetching transactions:', error);
-      return { isSuccess: false, isError: true, message: `Erro ao buscar transações: ${error.message}`, data: [] };
+    if (dataError) {
+      console.error('Error fetching transactions (data):', dataError);
+      return {
+        isSuccess: false,
+        isError: true,
+        message: `Erro ao buscar transações: ${dataError.message}`,
+        data: { // Estrutura de erro compatível
+          data: [],
+          pagination: {
+            currentPage: page,
+            pageSize: pageSize,
+            totalCount: 0,
+            totalPages: 0,
+          },
+          totalAmountFiltered: 0
+        }
+      };
+    }
+
+    // Query para calcular a soma total dos valores filtrados
+    // Reutilizando baseQuery para aplicar os mesmos filtros
+    const { data: sumData, error: sumError } = await baseQuery.select('amount');
+    
+    if (sumError) {
+      console.error('Error fetching sum of transactions:', sumError);
+      // Não retornar erro fatal aqui, podemos prosseguir sem a soma se falhar
+      // Ou tratar como erro dependendo do requisito
+    }
+
+    let totalAmountFiltered = 0;
+    if (sumData) {
+      totalAmountFiltered = sumData.reduce((acc, curr) => acc + (curr.amount || 0), 0);
     }
 
     const responseData: TransactionWithRelatedData[] = data?.map(t => ({
@@ -190,26 +267,50 @@ export async function getTransactionsForCompany(
       financial_account_name: t.financial_accounts?.name,
       category_name: t.transaction_categories?.name,
       currency_code: t.currencies?.code,
+      contact_name: (t as any).contacts?.name, // Adicionar contact_name se existir (precisa de join se não tiver)
     })) || [];
 
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / pageSize);
 
-    return {
-      isSuccess: true,
-      isError: false,
+    // Construir o objeto GetTransactionsResponse separadamente
+    const responsePayload: GetTransactionsResponse = {
       data: responseData,
       pagination: {
         currentPage: page,
-        pageSize,
-        totalCount,
-        totalPages,
-      }
+        pageSize: pageSize,
+        totalCount: totalCount,
+        totalPages: totalPages,
+      },
+      totalAmountFiltered: totalAmountFiltered
+    };
+
+    return {
+      isSuccess: true,
+      isError: false,
+      message: 'Transações buscadas com sucesso.',
+      data: responsePayload // Usar o payload construído
     };
 
   } catch (e: any) {
     console.error('Unexpected error in getTransactionsForCompany:', e);
-    return { isSuccess: false, isError: true, message: `Erro inesperado: ${e.message}`, data: [] };
+    // Garantir que o retorno de erro também seja compatível
+    const errorPayload: GetTransactionsResponse = {
+      data: [],
+      pagination: {
+        currentPage: filters?.page || 1,
+        pageSize: filters?.pageSize || DEFAULT_PAGE_SIZE,
+        totalCount: 0,
+        totalPages: 0,
+      },
+      totalAmountFiltered: 0
+    };
+    return { 
+      isSuccess: false, 
+      isError: true, 
+      message: `Ocorreu um erro inesperado: ${e.message}`,
+      data: errorPayload
+    };
   }
 }
 

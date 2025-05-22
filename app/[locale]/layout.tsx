@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { locales, type Locale } from "@/i18n"; // i18n.ts exporta 'locales' e 'Locale'
 import { getMessages, setRequestLocale } from 'next-intl/server'; // Usar getMessages daqui
 import Header from '@/components/Header';
+import { Toaster } from 'sonner';
+import { ThemeProvider } from '@/components/ThemeProvider';
 // Remova imports não utilizados como 'getMessages' de 'next-intl/server' se não for mais necessário
 
 // Se você tiver um arquivo globals.css, importe-o aqui
@@ -49,14 +51,18 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   
   return (
     <NextIntlClientProvider locale={locale} messages={messages}> 
-      {/* ThemeProvider e Toaster já estão no RootLayout, então não precisam ser repetidos aqui 
-          a menos que você queira um contexto de tema/notificação específico para este layout de locale.
-          Normalmente, Header e main content são suficientes. 
-      */}
-      <Header />
-      <main className="flex-grow p-6"> {/* Adicionado algum padding à main */}
-        {children}
-      </main>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {children}
+        </main>
+        <Toaster />
+      </ThemeProvider>
     </NextIntlClientProvider>
   );
 } 

@@ -100,12 +100,12 @@ export default function TransactionCategoryTable({
                 </TableCell>
                 <TableCell>
                   {category.is_active ? (
-                    <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">
+                    <Badge variant="default" className="border-transparent bg-green-500 text-green-50 hover:bg-green-500/80 dark:bg-green-700 dark:text-green-50 dark:hover:bg-green-700/80">
                       <CheckCircledIcon className="mr-1 h-3 w-3" />
                       {t('status.active')}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary">
+                    <Badge variant="outline" className="border-transparent bg-gray-500 text-gray-50 hover:bg-gray-500/80 dark:bg-gray-600 dark:text-gray-50 dark:hover:bg-gray-600/80">
                       <CrossCircledIcon className="mr-1 h-3 w-3" />
                       {t('status.inactive')}
                     </Badge>

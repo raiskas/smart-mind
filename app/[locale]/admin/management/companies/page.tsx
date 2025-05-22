@@ -2,8 +2,17 @@ import { getTranslations } from 'next-intl/server';
 import { getCompaniesAction } from '../../../../actions/companyActions';
 import { getCurrenciesAction } from '../../../../actions/currencyActions';
 import CompanyManagementPageClient from './CompanyManagementPageClient'; // Reverted to no extension
-import { AlertDialog, AlertDialogDescription, AlertDialogTitle } from '../../../../../components/ui/alert-dialog';
-import { Terminal } from 'lucide-react';
+// import { AlertDialog, AlertDialogDescription, AlertDialogTitle } from '../../../../../components/ui/alert-dialog'; // AlertDialog não está sendo usado diretamente aqui
+import { Terminal } from 'lucide-react'; // Usado no bloco de erro original
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../../../../components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "../../../../../components/ui/alert"; // Mantido se Alert for usado, mas o original usava div
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons"; // Mantido se Alert for usado
 
 // Define a type for the company data expected by the client component
 // This should ideally come from your database types or be more specific
@@ -33,14 +42,16 @@ type CompanyManagementPageProps = {
 };
 
 export default async function CompanyManagementPage({ params: { locale } }: CompanyManagementPageProps) {
-  const t = await getTranslations('Admin.CompanyManagement'); // Namespace for translations
+  const t = await getTranslations('Admin.CompanyManagement');
   const tError = await getTranslations('Errors');
+  const tGlobal = await getTranslations('global');
 
   const companiesResult = await getCompaniesAction();
   const currenciesResult = await getCurrenciesAction();
 
   if (companiesResult.error || currenciesResult.error) {
-    const errorMessage = companiesResult.error || currenciesResult.error || tError('genericError');
+    const errorMessage = companiesResult.error || currenciesResult.error || tGlobal('errors.generic');
+    // Revertendo para a estrutura de erro original desta página, que não usava Card/Alert
     return (
       <div className="container mx-auto py-10">
         <div className="p-4 border border-red-500 rounded-md bg-red-50 text-red-700">
@@ -58,13 +69,21 @@ export default async function CompanyManagementPage({ params: { locale } }: Comp
   const initialCompanies: CompanyData[] = companiesResult.companies || [];
   const currencies: CurrencyData[] = currenciesResult.currencies || [];
 
+  // Revertendo para a estrutura original: container > h1 > ClientComponent
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">{t('pageTitle')}</h1>
-      <CompanyManagementPageClient 
-        initialCompanies={initialCompanies} 
-        currencies={currencies} 
-      />
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('pageTitle')}</CardTitle>
+          <CardDescription>{t('pageDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompanyManagementPageClient 
+            initialCompanies={initialCompanies} 
+            currencies={currencies} 
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 } 

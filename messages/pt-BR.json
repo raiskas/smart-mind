@@ -36,17 +36,22 @@
     "logoutButton": "Sair",
     "homeLink": "Início",
     "dashboardLink": "Painel",
+    "adminDashboardLink": "Painel Gerencial",
     "loginLink": "Entrar",
     "userManagementLink": "Gerenciar Usuários",
     "roleManagementLink": "Gerenciar Funções",
     "companyManagementLink": "Empresas",
     "financialAccountsLink": "Contas Financeiras",
     "transactionCategoriesLink": "Categorias de Transação",
-    "transactionsLink": "Transações"
+    "transactionsLink": "Transações",
+    "contactManagementLink": "Gerenciar Contatos",
+    "payablesLink": "Contas a Pagar",
+    "receivablesLink": "Contas a Receber"
   },
   "HomePage": {
     "getStarted": "Comece editando",
-    "welcomeTitle": "Bem-vindo ao Next.js + Tailwind + shadcn/ui"
+    "welcomeTitle": "Bem-vindo ao Next.js + Tailwind + shadcn/ui",
+    "scheduled": "Agendado"
   },
   "ClientTestButton": {
     "testButtonText": "Testar Botão shadcn/ui",
@@ -76,14 +81,12 @@
       "transfer": "Transferência"
     },
     "financialAccountTypes": {
-      "BANK_ACCOUNT": "Conta Bancária",
-      "CREDIT_CARD": "Cartão de Crédito",
-      "INVESTMENT": "Investimento",
-      "OTHER": "Outro",
-      "CHECKING_ACCOUNT": "Conta Corrente",
-      "SAVINGS_ACCOUNT": "Conta Poupança",
-      "CASH": "Dinheiro em Caixa",
-      "LOAN": "Empréstimo"
+      "checkingAccount": "Conta Corrente",
+      "savingsAccount": "Conta Poupança",
+      "cash": "Dinheiro em Caixa",
+      "creditCard": "Cartão de Crédito",
+      "investment": "Investimento",
+      "other": "Outro"
     },
     "TransactionStatus": {
       "pending": "Pendente",
@@ -97,6 +100,8 @@
   "UserManagementPage": {
     "title": "Gerenciamento de Usuários",
     "description": "Gerencie todos os usuários, suas funções e permissões.",
+    "pageTitle": "Gerenciamento de Usuários",
+    "pageDescription": "Gerencie todos os usuários, suas funções e permissões.",
     "userListTitle": "Lista de Usuários",
     "loadingUsers": "Carregando usuários...",
     "createUserButton": "Criar Novo Usuário",
@@ -140,6 +145,8 @@
   "RoleManagementPage": {
     "title": "Gerenciamento de Funções",
     "description": "Crie, edite e gerencie as funções de usuário.",
+    "pageTitle": "Gerenciamento de Funções",
+    "pageDescription": "Crie, edite e gerencie as funções de usuário.",
     "createRoleButton": "Criar Nova Função",
     "loadingRoles": "Carregando funções...",
     "noRolesFound": "Nenhuma função encontrada.",
@@ -177,6 +184,7 @@
   "Admin": {
     "CompanyManagement": {
       "pageTitle": "Gerenciamento de Empresas",
+      "pageDescription": "Gerencie as informações das suas empresas ou filiais.",
       "buttons": {
         "addCompany": "Adicionar Nova Empresa"
       },
@@ -207,29 +215,15 @@
       }
     }
   },
-  "CompanyManagement": {
-    "Table": {
-      "noCompanies": "Nenhuma empresa cadastrada.",
-      "Headers": {
-        "name": "Nome",
-        "officialName": "Razão Social",
-        "taxId": "CNPJ/Tax ID",
-        "defaultCurrency": "Moeda Padrão",
-        "actions": "Ações"
-      },
-      "Actions": {
-        "openMenu": "Abrir menu",
-        "edit": "Editar",
-        "delete": "Excluir",
-        "deleting": "Excluindo..."
-      }
-    }
-  },
   "admin": {
     "financials": {
       "categories": {
         "title": "Gerenciamento de Categorias de Transação",
         "description": "Crie, edite e organize suas categorias de entrada e saída.",
+        "page": {
+          "title": "Gerenciar Categorias de Transação",
+          "description": "Crie, edite e organize suas categorias financeiras."
+        },
         "createButton": "Nova Categoria",
         "noCategoriesFound": "Nenhuma categoria encontrada.",
         "createModalTitle": "Criar Nova Categoria",
@@ -250,27 +244,37 @@
           "typeLabel": "Tipo de Categoria",
           "typePlaceholder": "Selecione o tipo",
           "descriptionLabel": "Descrição (Opcional)",
-          "descriptionPlaceholder": "Detalhes adicionais sobre a categoria"
+          "descriptionPlaceholder": "Detalhes adicionais sobre a categoria",
+          "parentCategoryLabel": "Categoria Pai (Opcional)",
+          "parentCategoryPlaceholder": "Selecione uma categoria pai",
+          "statusLabel": "Status da Categoria",
+          "activeLabel": "Ativa",
+          "inactiveLabel": "Inativa"
         },
         "table": {
           "headers": {
             "name": "Nome",
             "type": "Tipo",
+            "parentCategory": "Categoria Pai",
             "description": "Descrição",
             "status": "Status",
             "actions": "Ações"
+          },
+          "deleteDialog": {
+            "title": "Confirmar Exclusão",
+            "description": "Tem certeza que deseja excluir a categoria \"{categoryName}\"? Esta ação não pode ser desfeita."
           },
           "status": {
             "active": "Ativa",
             "inactive": "Inativa"
           },
           "actions": {
-            "edit": "Editar",
-            "delete": "Excluir",
             "toggleActive": "Ativar",
             "toggleInactive": "Desativar"
           }
-        }
+        },
+        "payablesLink": "Contas a Pagar",
+        "receivablesLink": "Contas a Receber"
       },
       "transactions": {
         "formModal": {
@@ -286,59 +290,66 @@
           "statusPlaceholder": "Selecione o status",
           "financialAccountLabel": "Conta Financeira",
           "currencyLabel": "Moeda",
-          "categoryLabel": "Categoria"
+          "categoryLabel": "Categoria",
+          "notesLabel": "Observações",
+          "contactLabel": "Contato"
+        }
+      },
+      "management": {
+        "financialAccounts": {
+          "title": "Gerenciamento de Contas Financeiras",
+          "description": "Adicione, edite e gerencie suas contas financeiras.",
+          "createButton": "Nova Conta Financeira",
+          "noAccountsFound": "Nenhuma conta financeira encontrada.",
+          "table": {
+            "headers": {
+              "name": "Nome da Conta",
+              "type": "Tipo",
+              "initialBalance": "Saldo Inicial",
+              "currency": "Moeda",
+              "bankName": "Nome do Banco",
+              "actions": "Ações"
+            }
+          },
+          "form": {
+            "nameLabel": "Nome da Conta",
+            "namePlaceholder": "Ex: Banco Principal, Cartão Black",
+            "typeLabel": "Tipo de Conta",
+            "typePlaceholder": "Selecione o tipo",
+            "initialBalanceLabel": "Saldo Inicial",
+            "initialBalancePlaceholder": "0.00",
+            "currencyLabel": "Moeda",
+            "currencyPlaceholder": "Selecione a moeda",
+            "bankNameLabel": "Nome do Banco (Opcional)",
+            "accountNumberLabel": "Número da Conta (Opcional)",
+            "cardNetworkLabel": "Bandeira do Cartão (Opcional)",
+            "cardLastFourDigitsLabel": "Últimos 4 dígitos (Opcional)",
+            "creditLimitLabel": "Limite de Crédito (Opcional)",
+            "statementClosingDateLabel": "Dia de Fechamento da Fatura (Opcional)",
+            "paymentDueDateLabel": "Dia de Vencimento da Fatura (Opcional)",
+            "descriptionLabel": "Descrição (Opcional)",
+            "descriptionPlaceholder": "Detalhes adicionais sobre a conta"
+          },
+          "messages": {
+            "createSuccess": "Conta financeira criada com sucesso!",
+            "updateSuccess": "Conta financeira atualizada com sucesso!",
+            "deleteSuccess": "Conta financeira excluída com sucesso!",
+            "dataItemNamePlaceholder": "dados de contas financeiras"
+          },
+          "errors": {
+            "createFailed": "Falha ao criar conta financeira.",
+            "updateFailed": "Falha ao atualizar conta financeira.",
+            "deleteFailed": "Falha ao excluir conta financeira.",
+            "failedToLoadData": "Falha ao carregar {item}."
+          },
+          "editModalTitle": "Editar Conta Financeira",
+          "createModalTitle": "Criar Nova Conta Financeira"
         }
       }
+    },
+    "HomePage": {
+      "scheduled": "Agendado"
     }
-  },
-  "FinancialAccountManagement": {
-    "pageTitle": "Gerenciamento de Contas Financeiras",
-    "pageDescription": "Adicione, edite e gerencie suas contas financeiras.",
-    "createButton": "Nova Conta Financeira",
-    "table": {
-      "noAccounts": "Nenhuma conta financeira encontrada.",
-      "headers": {
-        "name": "Nome da Conta",
-        "type": "Tipo",
-        "balance": "Saldo",
-        "currency": "Moeda",
-        "actions": "Ações"
-      }
-    },
-    "form": {
-      "createTitle": "Criar Nova Conta Financeira",
-      "editTitle": "Editar Conta Financeira",
-      "nameLabel": "Nome da Conta",
-      "namePlaceholder": "Ex: Banco Principal, Cartão Black",
-      "typeLabel": "Tipo de Conta",
-      "typePlaceholder": "Selecione o tipo",
-      "initialBalanceLabel": "Saldo Inicial",
-      "initialBalancePlaceholder": "0.00",
-      "currencyLabel": "Moeda",
-      "currencyPlaceholder": "Selecione a moeda",
-      "descriptionLabel": "Descrição (Opcional)",
-      "descriptionPlaceholder": "Detalhes adicionais sobre a conta"
-    },
-    "messages": {
-      "createSuccess": "Conta financeira criada com sucesso!",
-      "updateSuccess": "Conta financeira atualizada com sucesso!",
-      "deleteSuccess": "Conta financeira excluída com sucesso!"
-    },
-    "errors": {
-      "createFailed": "Falha ao criar conta financeira.",
-      "updateFailed": "Falha ao atualizar conta financeira.",
-      "deleteFailed": "Falha ao excluir conta financeira."
-    }
-  },
-  "FinancialAccountType": {
-    "BANK_ACCOUNT": "Conta Bancária",
-    "CREDIT_CARD": "Cartão de Crédito",
-    "INVESTMENT": "Investimento",
-    "OTHER": "Outro",
-    "CHECKING_ACCOUNT": "Conta Corrente",
-    "SAVINGS_ACCOUNT": "Conta Poupança",
-    "CASH": "Dinheiro em Caixa",
-    "LOAN": "Empréstimo"
   },
   "Currency": {
     "USD": "Dólar Americano (USD)",
@@ -354,12 +365,14 @@
     "edit": "Editar",
     "delete": "Excluir",
     "actions": "Ações",
+    "openMenu": "Abrir Menu",
     "close": "Fechar",
     "submit": "Enviar",
     "submitting": "Enviando...",
     "loading": "Carregando...",
     "areYouSure": "Você tem certeza?",
     "deleteConfirmation": "Esta ação não pode ser desfeita. Isso excluirá permanentemente o item.",
+    "deleteError": "Erro ao excluir: {error}",
     "confirm": "Confirmar",
     "optional": "Opcional",
     "requiredField": "Campo obrigatório",
@@ -382,6 +395,16 @@
     "errors": {
       "genericError": "Ocorreu um erro.",
       "unexpectedError": "Ocorreu um erro inesperado. Tente novamente."
+    },
+    "buttons": {
+      "save": "Salvar",
+      "create": "Criar",
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "delete": "Excluir",
+      "saveChanges": "Salvar Alterações",
+      "saving": "Salvando...",
+      "deleting": "Excluindo..."
     }
   },
   "ZodFormErrors": {
@@ -422,10 +445,123 @@
     "description": "Verifique se o endereço URL está correto ou tente navegar a partir da página inicial.",
     "goHomeLink": "Voltar para a Página Inicial"
   },
+  "global": {
+    "error_fetching_data": "Erro ao buscar dados.",
+    "error_saving_data": "Erro ao salvar dados.",
+    "error_unexpected": "Ocorreu um erro inesperado. Por favor, tente novamente.",
+    "errors": {
+      "formErrorTitle": "Erro no Formulário",
+      "failedToLoadData": "Falha ao carregar dados.",
+      "fetchDataErrorTitle": "Erro ao buscar dados: {item}",
+      "genericFetchErrorDetails": "Não foi possível carregar as informações solicitadas. Por favor, tente novamente mais tarde."
+    },
+    "confirm_delete_prompt": "Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
+    "previous_page": "Anterior",
+    "next_page": "Próxima",
+    "page": "Página",
+    "total_items": "Total de {count, plural, =0 {nenhum item} one {# item} other {# itens}}",
+    "items": "itens",
+    "loading": "Carregando",
+    "actions": {
+      "openMenu": "Abrir menu",
+      "edit": "Editar",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "save_changes": "Salvar Alterações",
+      "create": "Criar",
+      "confirmDeleteTitle": "Confirmar Exclusão",
+      "confirmDeleteMessageSpecific": "Tem certeza que deseja excluir {item} ({context})? Esta ação não pode ser desfeita."
+    },
+    "actions_menu": "Menu de ações",
+    "action_view_details": "Ver Detalhes",
+    "action_edit": "Editar",
+    "action_delete": "Excluir",
+    "action_cancel": "Cancelar",
+    "action_saving": "Salvando...",
+    "action_save_changes": "Salvar Alterações",
+    "action_create": "Criar",
+    "contact_type_customer": "Cliente",
+    "contact_type_supplier": "Fornecedor",
+    "contact_type_employee": "Colaborador",
+    "contact_type_other": "Outro",
+    "status_active": "Ativo",
+    "status_inactive": "Inativo",
+    "select_none": "Nenhum (Limpar seleção)",
+    "search_placeholder": "Buscar...",
+    "messages": {
+      "create_success": "{item} criado(a) com sucesso!",
+      "update_success": "{item} atualizado(a) com sucesso!",
+      "delete_success": "{item} excluído(a) com sucesso!"
+    }
+  },
+  "contacts_page": {
+    "page_title": "Gerenciamento de Contatos",
+    "singular_item_name": "Contato",
+    "page_description": "Adicione, edite e gerencie os contatos da sua empresa.",
+    "error_loading_contacts": "Erro ao carregar contatos",
+    "create_contact_button": "Adicionar Contato",
+    "error_deleting_contact": "Erro ao excluir contato",
+    "table_placeholder_text": "Tabela de contatos será exibida aqui.",
+    "table": {
+      "no_contacts_found": "Nenhum contato encontrado.",
+      "header_name": "Nome",
+      "header_type": "Tipo",
+      "header_email": "E-mail",
+      "header_phone": "Telefone",
+      "header_status": "Status",
+      "header_actions": "Ações"
+    },
+    "form": {
+      "title_edit": "Editar Contato",
+      "title_create": "Criar Novo Contato",
+      "description_edit": "Modifique os detalhes do contato abaixo.",
+      "description_create": "Preencha os detalhes do novo contato abaixo.",
+      "field_name_label": "Nome Completo / Razão Social",
+      "field_alias_name_label": "Nome Fantasia / Apelido",
+      "field_type_label": "Tipo de Contato",
+      "field_type_placeholder": "Selecione o tipo",
+      "field_document_type_label": "Tipo de Documento",
+      "field_document_type_placeholder": "Selecione o tipo de documento",
+      "field_document_number_label": "Número do Documento (CPF/CNPJ/Outro)",
+      "field_email_label": "E-mail Principal",
+      "field_phone_number_label": "Telefone Fixo",
+      "field_mobile_phone_number_label": "Telefone Celular",
+      "address_section_title": "Endereço",
+      "field_address_street_label": "Logradouro (Rua, Av.)",
+      "field_address_number_label": "Número",
+      "field_address_complement_label": "Complemento (Apto, Sala)",
+      "field_address_neighborhood_label": "Bairro",
+      "field_address_city_label": "Cidade",
+      "field_address_state_label": "Estado (UF)",
+      "field_address_zip_code_label": "CEP",
+      "field_address_country_label": "País",
+      "field_notes_label": "Observações Internas",
+      "field_is_active_label": "Contato Ativo"
+    }
+  },
+  "CompanyManagement": {
+    "Table": {
+      "noCompanies": "Nenhuma empresa encontrada.",
+      "Headers": {
+        "name": "Nome",
+        "officialName": "Razão Social",
+        "taxId": "CNPJ/Tax ID",
+        "defaultCurrency": "Moeda Padrão",
+        "actions": "Ações"
+      },
+      "Actions": {
+        "deleting": "Excluindo...",
+        "delete": "Excluir",
+        "openMenu": "Abrir menu",
+        "edit": "Editar"
+      }
+    }
+  },
   "Financials": {
     "TransactionsPage": {
-      "manageTransactionsTitle": "Gerenciar Transações",
-      "manageTransactionsDescription": "Adicione, edite e visualize suas transações financeiras.",
+      "manageTransactionsTitle": "Gerenciar Transações Financeiras",
+      "manageTransactionsDescription": "Visualize, crie, edite e exclua suas transações financeiras.",
+      "filterPlaceholder": "Filtrar transações...",
       "newTransactionButton": "Nova Transação",
       "table": {
         "noTransactionsFound": "Nenhuma transação encontrada.",
@@ -435,23 +571,47 @@
         "financialAccount": "Conta Financeira",
         "type": "Tipo",
         "status": "Status",
-        "amount": "Valor",
-        "filterPlaceholder": "Use os filtros abaixo para refinar sua busca ou adicione uma nova transação."
-      },
-      "formModal": {
-        "editTitle": "Editar Transação",
-        "createTitle": "Criar Nova Transação"
+        "amount": "Valor"
       }
+    },
+    "PayablesPage": {
+      "title": "Contas a Pagar",
+      "description": "Gerencie suas contas a pagar e acompanhe os vencimentos.",
+      "singularPayableName": "Conta a Pagar",
+      "errorLoadingPayables": "Erro ao carregar contas a pagar.",
+      "noPayablesFound": "Nenhuma conta a pagar encontrada.",
+      "totalDueLabel": "Total a Pagar"
+    },
+    "ReceivablesPage": {
+      "title": "Contas a Receber",
+      "description": "Gerencie suas contas a receber e acompanhe os recebimentos.",
+      "singularReceivableName": "Conta a Receber",
+      "errorLoadingReceivables": "Erro ao carregar contas a receber.",
+      "noReceivablesFound": "Nenhuma conta a receber encontrada.",
+      "totalReceivableLabel": "Total a Receber"
     }
   },
-  "TransactionStatus": {
-    "PENDING": "Pendente",
-    "COMPLETED": "Concluída",
-    "CANCELLED": "Cancelada"
-  },
-  "TransactionTypes": {
-    "INCOME": "Receita",
-    "EXPENSE": "Despesa",
-    "TRANSFER": "Transferência"
+  "AdminDashboardPage": {
+    "title": "Painel de Controle Administrativo",
+    "kpiSectionTitle": "Indicadores Chave (KPIs)",
+    "kpis": {
+      "totalPayables": "Total a Pagar",
+      "totalReceivables": "Total a Receber",
+      "consolidatedBalance": "Saldo Consolidado",
+      "monthlyTransactions": "Transações no Mês"
+    },
+    "quickActionsSectionTitle": "Ações Rápidas",
+    "quickActions": {
+      "manageTransactions": "Gerenciar Transações",
+      "managePayables": "Contas a Pagar",
+      "manageReceivables": "Contas a Receber",
+      "manageFinancialAccounts": "Contas Financeiras"
+    },
+    "upcomingSectionTitle": "Próximos Lançamentos",
+    "upcomingPayablesTitle": "Contas a Pagar Próximas",
+    "upcomingReceivablesTitle": "Contas a Receber Próximas",
+    "noUpcomingPayables": "Nenhuma conta a pagar próxima.",
+    "noUpcomingReceivables": "Nenhuma conta a receber próxima.",
+    "dataDisclaimer": "Os dados apresentados são baseados nas informações registradas no sistema."
   }
 } 

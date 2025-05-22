@@ -7,6 +7,7 @@ import { toast } from 'sonner'; // Assumindo que sonner está instalado para toa
 
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from '@radix-ui/react-icons';
+import { Input } from '@/components/ui/input';
 
 import type {
   FinancialAccountWithCurrency,
@@ -25,7 +26,7 @@ import {
 import FinancialAccountTable from './FinancialAccountTable';
 import FinancialAccountForm from './FinancialAccountForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { financialAccountTypeValues } from '@/lib/constants/financial';
+import { FINANCIAL_ACCOUNT_TYPES } from '@/lib/constants/financial';
 
 interface FinancialAccountManagementPageClientProps {
   initialFinancialAccounts: FinancialAccountWithCurrency[];
@@ -53,10 +54,11 @@ export default function FinancialAccountManagementPageClient({
   const [accounts, setAccounts] = useState<FinancialAccountWithCurrency[]>(initialFinancialAccounts);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState<FinancialAccountFormData | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const financialAccountTypesForForm = financialAccountTypeValues.map((value: FinancialAccountTypeValue) => ({
-    value,
-    label: tCommon('financialAccountTypes.' + value) || value,
+  const financialAccountTypesForForm = FINANCIAL_ACCOUNT_TYPES.map(typeConstant => ({
+    value: typeConstant.value,
+    label: tCommon(typeConstant.labelKey) || typeConstant.value,
   }));
 
   const [createFormState, createFormAction] = useFormState(createFinancialAccountAction, initialState);
@@ -151,10 +153,27 @@ export default function FinancialAccountManagementPageClient({
     deleteDispatch(formData);
   };
 
+  const filteredAccounts = accounts.filter(account => {
+    const term = searchTerm.toLowerCase();
+    const typeLabel = FINANCIAL_ACCOUNT_TYPES.find(type => type.value === account.account_type);
+    const translatedType = typeLabel ? tCommon(typeLabel.labelKey).toLowerCase() : '';
+
+    return (
+      account.name.toLowerCase().includes(term) ||
+      (account.bank_name && account.bank_name.toLowerCase().includes(term)) ||
+      translatedType.includes(term)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm" 
+        />
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenModal()}>
@@ -181,7 +200,7 @@ export default function FinancialAccountManagementPageClient({
       </div>
 
       <FinancialAccountTable
-        financialAccounts={accounts}
+        financialAccounts={filteredAccounts}
         onEdit={handleOpenModal} 
         handleDeleteAccount={handleDeleteAccount}
       />

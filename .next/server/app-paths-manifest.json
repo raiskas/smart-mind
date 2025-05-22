@@ -1,3 +1,7 @@
 {
-  "/[locale]/admin/management/financials/transactions/page": "app/[locale]/admin/management/financials/transactions/page.js"
+  "/[locale]/admin/financials/payables/page": "app/[locale]/admin/financials/payables/page.js",
+  "/[locale]/admin/management/financials/categories/page": "app/[locale]/admin/management/financials/categories/page.js",
+  "/[locale]/admin/management/financials/transactions/page": "app/[locale]/admin/management/financials/transactions/page.js",
+  "/[locale]/admin/financials/receivables/page": "app/[locale]/admin/financials/receivables/page.js",
+  "/[locale]/admin/dashboard/page": "app/[locale]/admin/dashboard/page.js"
 }

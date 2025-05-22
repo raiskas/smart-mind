@@ -7,6 +7,13 @@ import TransactionCategoryManagementPageClient from "./components/TransactionCat
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { isAdmin } from '@/lib/authUtils'; // Caminho corrigido para isAdmin
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default async function TransactionCategoriesPage() {
   const t = await getTranslations("admin.financials.categories"); 
@@ -51,9 +58,19 @@ export default async function TransactionCategoriesPage() {
   }
 
   return (
-    <TransactionCategoryManagementPageClient
-      initialCategories={categoriesResult.data}
-      companyId={companyId} 
-    />
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('page.title')}</CardTitle>
+          <CardDescription>{t('page.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TransactionCategoryManagementPageClient
+            initialCategories={categoriesResult.data}
+            companyId={companyId} 
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

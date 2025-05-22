@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { CompanyData, CurrencyData } from './page'; // Types from the parent page
-import { CreateCompanyFormState } from '../../../../actions/companyActions';
+import type { CreateCompanyFormState } from '../../../../lib/schemas/companyTypes'; // Corrected import path
 import { z } from 'zod';
 
 // Assuming Shadcn/UI components are available
@@ -44,6 +44,7 @@ export default function CompanyForm({
 }: CompanyFormProps) {
   const t = useTranslations('Admin.CompanyManagement.form');
   const tShared = useTranslations('Shared');
+  const tGlobal = useTranslations('global');
   const [state, dispatch] = useFormState(formAction, initialFormState);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function CompanyForm({
         <div className="mb-4 p-4 border border-red-500 rounded-md bg-red-50 text-red-700">
           <div className="flex">
             <Terminal className="h-4 w-4 mr-2 flex-shrink-0" />
-            <h3 className="font-semibold">{tShared('form.errorTitle')}</h3>
+            <h3 className="font-semibold">{tGlobal('errors.formErrorTitle')}</h3>
           </div>
           <p className="text-sm">{state.message}</p>
         </div>

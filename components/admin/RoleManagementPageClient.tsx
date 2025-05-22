@@ -22,6 +22,7 @@ import {
   // DialogClose // Removido se não usado diretamente
 } from "@/components/ui/dialog";
 import { createRoleAction, updateRoleAction } from '@/app/actions/roleActions';
+import { Input } from '@/components/ui/input';
 
 interface RoleFormData {
   id?: string;
@@ -39,12 +40,14 @@ interface RoleManagementPageClientProps { // Renomeado de RoleManagementPageProp
 // Renomeado de RoleManagementPageClient para RoleManagementPageClient (já era, mas confirmando)
 export default function RoleManagementPageClient({ initialRoles, userIsAdmin, locale }: RoleManagementPageClientProps) {
   const t = useTranslations('RoleManagementPage');
+  const tGlobal = useTranslations('global');
   const router = useRouter();
 
   const [roles, setRoles] = useState<Role[]>(initialRoles);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'create' | 'edit' | null>(null);
   const [currentRoleData, setCurrentRoleData] = useState<RoleFormData | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     setRoles(initialRoles);
@@ -102,23 +105,29 @@ export default function RoleManagementPageClient({ initialRoles, userIsAdmin, lo
     return result;
   };
 
+  const filteredRoles = roles.filter(role => 
+    role.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <header className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
-              {t('title')}
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {t('description')}
-            </p>
-          </div>
-          <Button onClick={handleOpenCreateModal} className="mt-4 sm:mt-0">
-            {t('createRoleButton')}
-          </Button>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button onClick={handleOpenCreateModal}>
+          {t('createRoleButton')}
+        </Button>
+      </div>
+
+      {filteredRoles && filteredRoles.length > 0 ? (
+        <RoleTable roles={filteredRoles} onEditRole={handleOpenEditModal} />
+      ) : (
+        <p>{t('noRolesFound')}</p>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={onModalOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
@@ -133,22 +142,12 @@ export default function RoleManagementPageClient({ initialRoles, userIsAdmin, lo
           {(modalType === 'create' || (modalType === 'edit' && currentRoleData)) && (
             <RoleForm
               formType={modalType}
-              serverAction={handleFormAction} // Esta serverAction é definida no client e chama as server actions reais.
+              serverAction={handleFormAction}
               initialData={modalType === 'edit' ? currentRoleData! : undefined}
             />
           )}
         </DialogContent>
       </Dialog>
-
-      <section>
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-          {roles && roles.length > 0 ? (
-            <RoleTable roles={roles} onEditRole={handleOpenEditModal} />
-          ) : (
-            <p>{t('noRolesFound')}</p>
-          )}
-        </div>
-      </section>
     </div>
   );
 } 

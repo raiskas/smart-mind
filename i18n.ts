@@ -77,6 +77,30 @@ export const pathnames = {
     'pt-BR': '/admin/gerenciamento/financeiro/transacoes',
     'es': '/admin/gestion/financiero/transacciones'
   },
+  // Contact Management Paths
+  '/admin/management/contacts': {
+    'en-US': '/admin/management/contacts',
+    'pt-BR': '/admin/gerenciamento/contatos',
+    'es': '/admin/gestion/contactos'
+  },
+  // Accounts Payable Paths
+  '/admin/financials/payables': {
+    'en-US': '/admin/financials/payables',
+    'pt-BR': '/admin/financeiro/contas-a-pagar',
+    'es': '/admin/financiero/cuentas-por-pagar'
+  },
+  // Accounts Receivable Paths
+  '/admin/financials/receivables': {
+    'en-US': '/admin/financials/receivables',
+    'pt-BR': '/admin/financeiro/contas-a-receber',
+    'es': '/admin/financiero/cuentas-por-cobrar'
+  },
+  // Admin Dashboard Path
+  '/admin/dashboard': {
+    'en-US': '/admin/dashboard',
+    'pt-BR': '/admin/painel-gerencial',
+    'es': '/admin/panel-de-control'
+  },
   // Adicione outros caminhos conforme necessário
 } as const;
 

@@ -94,4 +94,25 @@ export async function hasScreenPermission(
     default:
       return false;
   }
+}
+
+export async function getCurrentUserContext(client?: ReturnType<typeof createClient>) {
+  const supabase = client || createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { user: null, userId: null, companyId: null, error: userError || new Error('User not found.') };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { user, userId: user.id, companyId: null, error: profileError || new Error('Profile not found.') };
+  }
+
+  return { user, userId: user.id, companyId: profile.company_id, error: null };
 } 

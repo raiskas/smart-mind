@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircledIcon } from '@radix-ui/react-icons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
 import type { TransactionCategory, CreateTransactionCategoryPayload, UpdateTransactionCategoryPayload } from '@/lib/schemas/transactionCategory';
 import {
@@ -14,8 +15,8 @@ import {
   updateTransactionCategoryAction,
   deleteTransactionCategoryAction,
   toggleTransactionCategoryActiveStateAction,
-  type ActionResponse
 } from '@/app/actions/transactionCategoryActions';
+import type { ActionResponse } from '@/lib/types/actions';
 import TransactionCategoryTable from './TransactionCategoryTable'; 
 import TransactionCategoryForm from './TransactionCategoryForm';   
 
@@ -39,6 +40,7 @@ export default function TransactionCategoryManagementPageClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'create' | 'edit' | null>(null);
   const [currentCategory, setCurrentCategory] = useState<CategoryModalData | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     setCategories(initialCategories);
@@ -82,7 +84,7 @@ export default function TransactionCategoryManagementPageClient({
         router.refresh(); 
       } else {
         toast.error(response.message || tGlobal('errors.operationFailed'), {
-          description: response.errors?.map(e => `${e.path.join('.')}: ${e.message}`).join('\n')
+          description: response.errors?.map((e: import('zod').ZodIssue) => `${e.path.join('.')}: ${e.message}`).join('\n')
         });
       }
     });
@@ -111,44 +113,44 @@ export default function TransactionCategoryManagementPageClient({
     });
   };
 
-  return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <header className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
-              {t('title')}
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {t('description')}
-            </p>
-          </div>
-          <Button onClick={handleOpenCreateModal} className="mt-4 sm:mt-0" disabled={isPending}>
-            <PlusCircledIcon className="mr-2 h-5 w-5" />
-            {t('createButton')}
-          </Button>
-        </div>
-      </header>
+  const filteredCategories = categories.filter(category => {
+    const term = searchTerm.toLowerCase();
+    return (
+      category.name.toLowerCase().includes(term) ||
+      (category.description && category.description.toLowerCase().includes(term))
+    );
+  });
 
-      <section>
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 min-h-[200px]">
-          {(!isPending && categories.length > 0) && (
-            <TransactionCategoryTable 
-              categories={categories} 
-              onEdit={handleOpenEditModal} 
-              onDelete={handleDeleteCategory} 
-              onToggleActive={handleToggleActiveState}
-              isPending={isPending}
-            />
-          )}
-          {isPending && (
-            <p className="text-center text-gray-500 dark:text-gray-400 mt-4">{tGlobal('messages.loading')}</p>
-          )}
-          {categories.length === 0 && !isPending && (
-             <p className="text-center text-gray-500 dark:text-gray-400 mt-4">{t('noCategoriesFound')}</p>
-          )}
-        </div>
-      </section>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button onClick={handleOpenCreateModal} className="whitespace-nowrap" disabled={isPending}>
+          <PlusCircledIcon className="mr-2 h-5 w-5" />
+          {t('createButton')}
+        </Button>
+      </div>
+
+      {(!isPending && filteredCategories.length > 0) && (
+        <TransactionCategoryTable 
+          categories={filteredCategories} 
+          onEdit={handleOpenEditModal} 
+          onDelete={handleDeleteCategory} 
+          onToggleActive={handleToggleActiveState}
+          isPending={isPending}
+        />
+      )}
+      {isPending && (
+        <p className="text-center text-gray-500 dark:text-gray-400">{tGlobal('messages.loading')}</p>
+      )}
+      {filteredCategories.length === 0 && !isPending && (
+          <p className="text-center text-gray-500 dark:text-gray-400">{t('noCategoriesFound')}</p>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={handleModalOpenChange}>
         <DialogContent className="sm:max-w-[500px]">

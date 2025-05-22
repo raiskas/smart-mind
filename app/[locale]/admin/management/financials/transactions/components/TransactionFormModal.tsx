@@ -66,6 +66,7 @@ interface TransactionFormModalProps {
   onClose: () => void;
   onSuccess: () => void;
   initialData?: Partial<ClientTransactionFormData> & { id?: string }; // id para edição
+  defaultType?: 'income' | 'expense' | 'transfer'; // Nova prop
 }
 
 export default function TransactionFormModal({
@@ -73,6 +74,7 @@ export default function TransactionFormModal({
   onClose,
   onSuccess,
   initialData,
+  defaultType, // Receber a nova prop
 }: TransactionFormModalProps) {
   const tModal = useTranslations('admin.financials.transactions.formModal');
   const tShared = useTranslations('Shared');
@@ -103,7 +105,7 @@ export default function TransactionFormModal({
       description: '',
       amount: 0,
       transaction_date: new Date(),
-      type: undefined,
+      type: initialData?.type || defaultType, // Usar defaultType aqui
       status: undefined,
       financial_account_id: '',
       category_id: null,
@@ -114,6 +116,7 @@ export default function TransactionFormModal({
         ...initialData,
         amount: initialData.amount || 0,
         transaction_date: initialData.transaction_date ? new Date(initialData.transaction_date) : new Date(),
+        // type é tratado acima para priorizar initialData.type, depois defaultType
       } : {}),
     },
   });

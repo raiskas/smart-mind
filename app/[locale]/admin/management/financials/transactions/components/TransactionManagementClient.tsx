@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 // import TransactionFilters from './TransactionFilters';
 import TransactionsTable, { type Transaction as TableTransaction } from './TransactionsTable';
@@ -16,11 +18,14 @@ import type { TransactionWithRelatedData } from '@/app/actions/transactionAction
 export default function TransactionManagementClient() {
   const t = useTranslations('Financials.TransactionsPage');
   const tShared = useTranslations('Shared');
+  const tGlobal = useTranslations('global');
+  const searchParams = useSearchParams();
 
   const [transactions, setTransactions] = useState<TableTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTransactionForEdit, setSelectedTransactionForEdit] = useState<TableTransaction | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   // TODO: Adicionar estado para paginação se necessário no futuro
 
   const fetchTransactions = useCallback(async (page = 1, pageSize = 10) => {
@@ -34,8 +39,8 @@ export default function TransactionManagementClient() {
       sortDirection: 'desc',
     });
 
-    if (result.isSuccess && result.data) {
-      const fetchedTransactions: TableTransaction[] = result.data.map(item => ({
+    if (result.isSuccess && result.data && result.data.data) {
+      const fetchedTransactions: TableTransaction[] = result.data.data.map(item => ({
         id: item.id,
         date: item.transaction_date,
         description: item.description,
@@ -53,7 +58,7 @@ export default function TransactionManagementClient() {
         notes: item.notes || null,
       }));
       setTransactions(fetchedTransactions);
-      // console.log('Pagination data:', result.pagination);
+      // console.log('Pagination data:', result.data.pagination);
     } else {
       console.error("Failed to fetch transactions:", result.message);
       setTransactions([]); // Limpar transações em caso de erro
@@ -65,6 +70,14 @@ export default function TransactionManagementClient() {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'new') {
+      handleOpenModalForCreate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleOpenModalForCreate = () => {
     setSelectedTransactionForEdit(null);
@@ -120,14 +133,25 @@ export default function TransactionManagementClient() {
     };
   };
 
+  const filteredTransactions = transactions.filter(transaction => {
+    const term = searchTerm.toLowerCase();
+    return (
+      transaction.description.toLowerCase().includes(term) ||
+      (transaction.categoryName && transaction.categoryName.toLowerCase().includes(term)) ||
+      (transaction.financialAccountName && transaction.financialAccountName.toLowerCase().includes(term)) ||
+      (transaction.contactName && transaction.contactName.toLowerCase().includes(term))
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {t('table.filterPlaceholder')}
-          </p>
-        </div>
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm" 
+        />
         <Button onClick={handleOpenModalForCreate}>
           <PlusCircle className="mr-2 h-4 w-4" />
           {t('newTransactionButton')}
@@ -135,7 +159,7 @@ export default function TransactionManagementClient() {
       </div>
 
       <TransactionsTable
-        transactions={transactions}
+        transactions={filteredTransactions}
         isLoading={isLoading}
         onEdit={handleOpenModalForEdit}
         onDelete={handleDeleteTransaction}

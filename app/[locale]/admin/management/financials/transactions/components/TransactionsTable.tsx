@@ -57,8 +57,8 @@ export default function TransactionsTable({
 }: TransactionsTableProps) {
   const t = useTranslations('Financials.TransactionsPage.table');
   const tShared = useTranslations('Shared');
-  const tStatus = useTranslations('TransactionStatus'); // Para traduzir status
-  const tTypes = useTranslations('TransactionTypes'); // Para traduzir tipos
+  const tStatus = useTranslations('Common.TransactionStatus'); // Changed from TransactionStatus
+  const tTypes = useTranslations('Common.TransactionCategoryTypes'); // Changed from TransactionTypes
   const currentLocale = useLocale(); // Correção para obter o locale atual
 
   if (isLoading) {

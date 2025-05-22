@@ -18,6 +18,7 @@ import {
 import { createUserAction, updateUserAction } from '@/app/actions/userActions'; // Assumindo que existem
 import { type Locale } from '@/i18n';
 import { type Company } from '@/app/[locale]/admin/management/companies/types'; // Importar o tipo Company
+import { Input } from '@/components/ui/input'; // Adicionar import
 
 interface UserManagementPageClientProps {
   initialUsers: UserData[];
@@ -35,11 +36,13 @@ export default function UserManagementPageClient({
   locale,
 }: UserManagementPageClientProps) {
   const t = useTranslations('UserManagementPage'); // Namespace para traduções
+  const tGlobal = useTranslations('global'); // Adicionar tGlobal
   const router = useRouter();
 
   const [users, setUsers] = useState<UserData[]>(initialUsers);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'create' | 'edit' | null>(null);
+  const [searchTerm, setSearchTerm] = useState(''); // Adicionar estado searchTerm
   // UserProfileData é o tipo esperado por UserForm para initialData
   const [currentUserData, setCurrentUserData] = useState<UserProfileData | null>(null);
 
@@ -102,23 +105,34 @@ export default function UserManagementPageClient({
     return result; 
   };
 
+  const filteredUsers = users.filter(user => {
+    const term = searchTerm.toLowerCase();
+    return (
+      user.username?.toLowerCase().includes(term) ||
+      user.full_name?.toLowerCase().includes(term) ||
+      user.email?.toLowerCase().includes(term)
+    );
+  });
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <header className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
-              {t('title')}
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {t('description')}
-            </p>
-          </div>
-          <Button onClick={handleOpenCreateModal} className="mt-4 sm:mt-0">
-            {t('createUserButton')}
-          </Button>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Input 
+          placeholder={tGlobal('search_placeholder')} 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm" 
+        />
+        <Button onClick={handleOpenCreateModal}>
+          {t('createUserButton')}
+        </Button>
+      </div>
+
+      {filteredUsers && filteredUsers.length > 0 ? (
+        <UserTable users={filteredUsers} onEditUser={handleOpenEditModal} />
+      ) : (
+        <p>{t('noUsersFound')}</p>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={onModalOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
@@ -134,23 +148,13 @@ export default function UserManagementPageClient({
             <UserForm
               formType={modalType}
               serverAction={handleFormAction} 
-              initialData={modalType === 'edit' ? currentUserData! : undefined} // Passa os dados para edição
-              roles={availableRoles} // Passa as roles para o Select
-              companies={availableCompanies} // Passar availableCompanies para UserForm
+              initialData={modalType === 'edit' ? currentUserData! : undefined}
+              roles={availableRoles}
+              companies={availableCompanies}
             />
           )}
         </DialogContent>
       </Dialog>
-
-      <section>
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-          {users && users.length > 0 ? (
-            <UserTable users={users} onEditUser={handleOpenEditModal} />
-          ) : (
-            <p>{t('noUsersFound')}</p>
-          )}
-        </div>
-      </section>
     </div>
   );
 } 

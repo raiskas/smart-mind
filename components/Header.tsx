@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'; // Correção: case para Button
 
 export default async function Header() {
   const locale = await getLocale(); // Obter o locale atual para os Links
-  const t = await getTranslations({ locale, namespace: 'Header' });
+  const t = await getTranslations({ locale, namespace: 'Header' }); // t principal com namespace
+  const tGlobal = await getTranslations({ locale }); // tGlobal sem namespace para teste
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -32,6 +33,11 @@ export default async function Header() {
             {user && (
               <Link href="/dashboard" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 {t('dashboardLink')}
+              </Link>
+            )}
+            {user && userIsAdmin && (
+              <Link href="/admin/dashboard" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                {t('adminDashboardLink')}
               </Link>
             )}
             {user && userIsAdmin && (
@@ -62,6 +68,21 @@ export default async function Header() {
             {user && userIsAdmin && (
               <Link href="/admin/management/financials/transactions" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 {t('transactionsLink')}
+              </Link>
+            )}
+            {user && userIsAdmin && (
+              <Link href="/admin/management/contacts" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                {t('contactManagementLink')}
+              </Link>
+            )}
+            {user && userIsAdmin && (
+              <Link href="/admin/financials/payables" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                {t('payablesLink')}
+              </Link>
+            )}
+            {user && userIsAdmin && (
+              <Link href="/admin/financials/receivables" locale={locale} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                {tGlobal('Header.receivablesLink')} {/* Teste com tGlobal e chave completa */}
               </Link>
             )}
           </div>

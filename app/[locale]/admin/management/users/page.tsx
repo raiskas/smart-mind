@@ -7,6 +7,13 @@ import UserManagementPageClient from '@/components/admin/UserManagementPageClien
 import { isAdmin } from '@/lib/authUtils';
 import { type Role as UserFormRole } from '@/components/admin/UserForm';
 import { getCompaniesAction } from '@/app/actions/companyActions';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // Helper para verificar se o usuário é admin
 // async function isAdmin(supabaseClient: ReturnType<typeof createClient>) { ... }
@@ -24,10 +31,10 @@ export default async function UserManagementPage({params}: {params: {locale: str
   }
 
   const t = await getTranslations({locale: localeToUse, namespace: 'UserManagementPage'});
+  const tGlobal = await getTranslations({locale: localeToUse, namespace: 'global'});
 
   console.log('[UserManagementPage] Acesso permitido: Usuário é admin.');
 
-  // Buscar todos os usuários, suas roles e companies
   const { data: usersData, error: usersError } = await supabase
     .from('profiles')
     .select(`
@@ -42,7 +49,7 @@ export default async function UserManagementPage({params}: {params: {locale: str
 
   if (usersError) {
     console.error("Erro ao buscar usuários:", usersError.message);
-    // TODO: Adicionar tradução para mensagem de erro
+    // Revertendo para a estrutura de erro original (um simples <p>)
     return <p>Error loading users: {usersError.message}</p>; 
   }
 
@@ -56,7 +63,6 @@ export default async function UserManagementPage({params}: {params: {locale: str
     company_name: user.companies ? (user.companies as any).name : null,
   })) || [];
 
-  // Buscar todas as roles disponíveis para o formulário
   const { data: availableRolesData, error: rolesError } = await supabase
     .from('roles')
     .select('id, name')
@@ -64,34 +70,35 @@ export default async function UserManagementPage({params}: {params: {locale: str
 
   if (rolesError) {
     console.error("Erro ao buscar roles disponíveis:", rolesError.message);
-    // Lidar com o erro, talvez retornar array vazio ou mostrar mensagem
   }
   const availableRoles: UserFormRole[] = availableRolesData || [];
 
-  // Buscar todas as empresas disponíveis para o formulário
   const companiesResult = await getCompaniesAction();
   if (companiesResult.error) {
     console.error("Erro ao buscar empresas disponíveis:", companiesResult.error);
-    // Lidar com o erro, talvez retornar array vazio ou mostrar mensagem
   }
   const availableCompanies = companiesResult.companies || [];
 
   console.log('[UserManagementPage] Usuários processados:', users);
   console.log('[UserManagementPage] Dados finais dos usuários para o cliente:', JSON.stringify(users, null, 2));
 
-  // TODO: Implementar busca e listagem de usuários aqui
-  // Temporariamente, vamos exibir os dados brutos
-  // const usersContent = users && users.length > 0 
-  //   ? <pre>{JSON.stringify(users, null, 2)}</pre>
-  //   : <p>{t('noUsersFound')}</p>; // Precisaremos desta tradução
-
   return (
-    <UserManagementPageClient 
-      initialUsers={users}
-      availableRoles={availableRoles}
-      availableCompanies={availableCompanies}
-      userIsAdmin={userIsAdmin}
-      locale={localeToUse}
-    />
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('pageTitle')}</CardTitle>
+          <CardDescription>{t('pageDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UserManagementPageClient 
+            initialUsers={users}
+            availableRoles={availableRoles}
+            availableCompanies={availableCompanies}
+            userIsAdmin={userIsAdmin}
+            locale={localeToUse}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 } 

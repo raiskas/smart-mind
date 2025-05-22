@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/[locale]/admin/management/financials/transactions/page": [
+    "/[locale]/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/[locale]/admin/management/financials/transactions/page.js"
+      "static/chunks/app/[locale]/login/page.js"
     ],
     "/[locale]/layout": [
       "static/chunks/webpack.js",
@@ -20,6 +20,66 @@
       "static/chunks/main-app.js",
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
+    ],
+    "/[locale]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/page.js"
+    ],
+    "/[locale]/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/dashboard/page.js"
+    ],
+    "/[locale]/admin/management/financials/transactions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/financials/transactions/page.js"
+    ],
+    "/[locale]/admin/management/financials/categories/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/financials/categories/page.js"
+    ],
+    "/[locale]/admin/management/contacts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/contacts/page.js"
+    ],
+    "/[locale]/admin/management/financial-accounts/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/financial-accounts/page.js"
+    ],
+    "/[locale]/admin/management/companies/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/companies/page.js"
+    ],
+    "/[locale]/admin/management/roles/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/roles/page.js"
+    ],
+    "/[locale]/admin/management/users/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/management/users/page.js"
+    ],
+    "/[locale]/admin/financials/payables/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/financials/payables/page.js"
+    ],
+    "/[locale]/admin/financials/receivables/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/financials/receivables/page.js"
+    ],
+    "/[locale]/admin/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/[locale]/admin/dashboard/page.js"
     ]
   }
 }

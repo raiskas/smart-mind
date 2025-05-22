@@ -6,6 +6,16 @@ import { type Role } from '@/lib/types/screens'; // Certifique-se que Role e Scr
 import RoleManagementPageClient from '@/components/admin/RoleManagementPageClient';
 import { getTranslations } from 'next-intl/server';
 import { type Locale } from '@/i18n';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+// Removendo imports do Card e Alert se não forem mais usados
+// import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
+// import { ExclamationTriangleIcon } from "@radix-ui/react-icons"; 
 
 // Função para buscar roles - Adapte conforme sua implementação real
 async function getRoles(supabase: ReturnType<typeof createClient>): Promise<Role[]> {
@@ -61,6 +71,7 @@ export default async function RoleManagementPage({ params: { locale } }: RoleMan
   const cookieStore = cookies();
   const supabase = createClient();
   const t = await getTranslations({ locale, namespace: 'RoleManagementPage' });
+  const tGlobal = await getTranslations({locale: locale, namespace: 'global'}); // Para erros globais
 
   const userIsAdmin = await isAdmin(supabase);
 
@@ -69,12 +80,26 @@ export default async function RoleManagementPage({ params: { locale } }: RoleMan
   }
 
   const initialRoles = await getRoles(supabase);
+  
+  // Adicionando um tratamento caso getRoles retorne vazio devido a um erro interno não lançado
+  // Ou se a intenção for mostrar um erro específico se não houver roles.
+  // Por ora, se initialRoles estiver vazio (seja por erro ou não), o componente cliente tratará "noRolesFound"
 
   return (
-    <RoleManagementPageClient 
-      initialRoles={initialRoles} 
-      userIsAdmin={userIsAdmin} // Passa true, já que a verificação acima garante isso
-      locale={locale} 
-    />
+    <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('pageTitle')}</CardTitle>
+          <CardDescription>{t('pageDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RoleManagementPageClient 
+            initialRoles={initialRoles} 
+            userIsAdmin={userIsAdmin} 
+            locale={locale} 
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 } 
